@@ -5,17 +5,11 @@ class DockerForAppleContainer < Formula
   sha256 "47ed0a0af4334b81bc519d301b98443b41330991526578c2a1b73018ab7880a7"
   license "MIT"
 
-  depends_on "python@3.12"
-
   def install
-    # Stdlib-only package, so there is no virtualenv or vendored resource set.
-    # Install the source tree and run the existing launcher with Homebrew's
-    # pinned Python (the launcher's `env python3` could otherwise be too old).
+    # Pure-stdlib Python run via the launcher's `#!/usr/bin/env python3` shebang.
+    # No Python dependency: any python3 works, including the one macOS ships.
     libexec.install "bin", "src"
-    (bin/"docker-for-apple-container").write <<~SH
-      #!/bin/bash
-      exec "#{formula_opt_bin("python@3.12")}/python3.12" "#{libexec}/bin/docker" "$@"
-    SH
+    bin.install_symlink libexec/"bin/docker" => "docker-for-apple-container"
   end
 
   test do

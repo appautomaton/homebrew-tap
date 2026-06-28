@@ -14,7 +14,7 @@ class DockerForAppleContainer < Formula
     libexec.install "bin", "src"
     (bin/"docker-for-apple-container").write <<~SH
       #!/bin/bash
-      exec "#{Formula["python@3.12"].opt_bin}/python3.12" "#{libexec}/bin/docker" "$@"
+      exec "#{formula_opt_bin("python@3.12")}/python3.12" "#{libexec}/bin/docker" "$@"
     SH
   end
 

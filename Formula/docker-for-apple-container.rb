@@ -1,8 +1,8 @@
 class DockerForAppleContainer < Formula
   desc "Docker CLI compatibility shim over Apple's container CLI"
   homepage "https://github.com/appautomaton/docker-for-apple-container"
-  url "https://github.com/appautomaton/docker-for-apple-container/archive/refs/tags/v0.1.2.tar.gz"
-  sha256 "bc2bae930fd04696f724235ee95891a8a6557468349317f2e9025f036e570ff5"
+  url "https://github.com/appautomaton/docker-for-apple-container/archive/refs/tags/v0.1.3.tar.gz"
+  sha256 "719a5aef02b0d97a5d10d1eb081b19baf7645554e5d8565868a5ccac0862fbfd"
   license "MIT"
 
   conflicts_with "docker", because: "both provide a docker executable"

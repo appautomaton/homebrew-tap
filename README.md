@@ -22,13 +22,20 @@ brew install appautomaton/tap/docker-for-apple-container
   Apple's native `container`, with no Docker Desktop. macOS only (Apple Silicon).
   Source: https://github.com/appautomaton/docker-for-apple-container
 
-## Updating a formula for a new release
+## Updating docker-for-apple-container
 
-1. Cut a tagged release in the source repo (for example `v0.1.0`).
-2. Get the release tarball's sha256:
-   ```bash
-   curl -sL https://github.com/appautomaton/docker-for-apple-container/archive/refs/tags/v0.1.0.tar.gz | shasum -a 256
-   ```
-3. Update the `url` version and `sha256` in
-   `Formula/docker-for-apple-container.rb`.
-4. Commit and push. Users pick it up on the next `brew update`.
+The `Update docker-for-apple-container` workflow checks the latest published
+GitHub release every six hours and can also be run manually. When a newer
+release exists, it downloads that exact tag archive, calculates its SHA-256,
+updates and validates the formula, then commits the bump directly to `main`
+using the repository's built-in `GITHUB_TOKEN`.
+
+For a local or recovery update, run:
+
+```bash
+scripts/update-docker-for-apple-container v0.1.4
+scripts/validate-docker-for-apple-container
+```
+
+Omit the tag to resolve the latest published release through `gh`. Users pick
+up a committed formula update on their next `brew update`.

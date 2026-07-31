@@ -1,0 +1,59 @@
+name: Update docker-for-apple-container
+
+on:
+  schedule:
+    - cron: "17 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-docker-for-apple-container
+  cancel-in-progress: false
+
+jobs:
+  update:
+    if: github.repository == 'appautomaton/homebrew-tap'
+    runs-on: macos-26
+    steps:
+      - name: Check out tap
+        uses: actions/checkout@v4
+
+      - name: Set up Homebrew
+        id: set-up-homebrew
+        uses: Homebrew/actions/setup-homebrew@df4b09108a1de9d6f995fe68f302b3f68bd6d2ef # 2026.07.20.1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update formula
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: scripts/update-docker-for-apple-container
+
+      - name: Detect changes
+        id: changes
+        run: |
+          if git diff --quiet -- Formula/docker-for-apple-container.rb
+          then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Validate formula
+        if: steps.changes.outputs.changed == 'true'
+        run: scripts/validate-docker-for-apple-container
+
+      - name: Configure git
+        if: steps.changes.outputs.changed == 'true'
+        uses: Homebrew/actions/git-user-config@df4b09108a1de9d6f995fe68f302b3f68bd6d2ef # 2026.07.20.1
+
+      - name: Commit and push
+        if: steps.changes.outputs.changed == 'true'
+        run: |
+          version=$(sed -n 's|.*refs/tags/v\([^/]*\)\.tar\.gz.*|\1|p' Formula/docker-for-apple-container.rb)
+          test -n "$version"
+          git add Formula/docker-for-apple-container.rb
+          git commit -m "docker-for-apple-container ${version}"
+          git push origin HEAD:main

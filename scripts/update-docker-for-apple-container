@@ -1,0 +1,56 @@
+#!/bin/bash
+set -euo pipefail
+
+upstream_repo="appautomaton/docker-for-apple-container"
+formula_path="Formula/docker-for-apple-container.rb"
+release_tag="${1:-}"
+
+if [[ ! -f "$formula_path" ]]; then
+  printf 'formula not found: %s\n' "$formula_path" >&2
+  exit 1
+fi
+
+if [[ -z "$release_tag" ]]; then
+  if ! command -v gh >/dev/null 2>&1; then
+    printf '%s\n' 'gh is required when no release tag is supplied' >&2
+    exit 1
+  fi
+  release_tag=$(gh api "repos/${upstream_repo}/releases/latest" --jq .tag_name)
+fi
+
+if [[ ! "$release_tag" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+  printf 'unsupported release tag: %s\n' "$release_tag" >&2
+  exit 1
+fi
+
+release_version="${BASH_REMATCH[1]}"
+archive_url="https://github.com/${upstream_repo}/archive/refs/tags/${release_tag}.tar.gz"
+archive_path=$(mktemp)
+trap 'rm -f "$archive_path"' EXIT
+
+curl -fsSL "$archive_url" -o "$archive_path"
+archive_sha256=$(shasum -a 256 "$archive_path" | awk '{print $1}')
+
+FORMULA_PATH="$formula_path" \
+ARCHIVE_URL="$archive_url" \
+ARCHIVE_SHA256="$archive_sha256" \
+ruby <<'RUBY'
+path = ENV.fetch("FORMULA_PATH")
+archive_url = ENV.fetch("ARCHIVE_URL")
+archive_sha256 = ENV.fetch("ARCHIVE_SHA256")
+contents = File.read(path)
+
+url_pattern = /^  url "https:\/\/github\.com\/appautomaton\/docker-for-apple-container\/archive\/refs\/tags\/v[^"]+\.tar\.gz"$/
+sha_pattern = /^  sha256 "[0-9a-f]{64}"$/
+
+abort "expected exactly one docker-for-apple-container URL" unless contents.scan(url_pattern).length == 1
+abort "expected exactly one formula SHA-256" unless contents.scan(sha_pattern).length == 1
+
+contents.sub!(url_pattern, %(  url "#{archive_url}"))
+contents.sub!(sha_pattern, %(  sha256 "#{archive_sha256}"))
+File.write(path, contents)
+RUBY
+
+printf 'docker-for-apple-container %s\n' "$release_version"
+printf 'url: %s\n' "$archive_url"
+printf 'sha256: %s\n' "$archive_sha256"

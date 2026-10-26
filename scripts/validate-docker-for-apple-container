@@ -4,7 +4,8 @@ set -euo pipefail
 formula_path="Formula/docker-for-apple-container.rb"
 tap_owner="appautomaton"
 tap_repo="homebrew-tap-validation"
-formula_name="${tap_owner}/tap-validation/docker-for-apple-container"
+tap_name="${tap_owner}/tap-validation"
+formula_name="${tap_name}/docker-for-apple-container"
 
 if [[ ! -f "$formula_path" ]]; then
   printf 'formula not found: %s\n' "$formula_path" >&2
@@ -25,11 +26,15 @@ mkdir -p "$tap_parent"
 ln -s "$checkout_path" "$tap_path"
 
 cleanup() {
+  brew untrust --tap "$tap_name" >/dev/null 2>&1 || true
   if [[ -L "$tap_path" && "$(readlink "$tap_path")" == "$checkout_path" ]]; then
     rm "$tap_path"
   fi
 }
 trap cleanup EXIT
+
+# Homebrew refuses to load formulae from taps the user has not trusted.
+brew trust --tap "$tap_name"
 
 brew style "$formula_path"
 brew audit --strict --online "$formula_name"
